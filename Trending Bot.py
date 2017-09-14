@@ -1,5 +1,5 @@
-# Requires pandas. For Windows users, I recommend installing the Anaconda Python distirbution.
-# Requires the pytrends library. To install, run "pip install pytrends".
+# Requires pandas. For Windows users it would be best to use the anaconda distro
+# Requires the pytrends library
 from pytrends.request import TrendReq
 import time
 import numpy
@@ -9,19 +9,20 @@ import pandas as pd
 print ("Imports complete")
 
 # Add your Gmail username to the google_username variable and your Gmail password to the google_password variable.
-google_username = ""
+# Be sure to amend the tz variable for your timezone.
+# https://github.com/GeneralMills/pytrends
+g6yoogle_username = ""
 google_password = ""
 connector = TrendReq(google_username, google_password, tz='-360')
 
-# This script downloads a series of CSV files from Google Trends. Please specify a filepath for where you'd like these files to be stored in the below variable.
+# This script downloads a series of CSV files. Please specify your working directory.
 path = "C:\\Users\\robfa\\Desktop\\0.csv"
 
-# Specify the filename of a CSV with a list of keywords in the variable, keyordcsv. The CSV should be one column, with header equal to Keywords (case sensitive).
+# Specify the filename of a CSV with a list of keywords in the variable, keywordcsv. The CSV should be one column, with header equal to Keywords (case sensitive).
 keywordcsv = "keywords.csv"
 keywords = pd.read_csv(keywordcsv)
-#print(keywords)
 
-# Downloads and Calculate Slope:
+# Downloads the new data, and compares this to the previous.
 keywordlist = pd.DataFrame(columns=["keyword","slope","test"])
 for index, row in keywords.iterrows():
     path = "C:\\Users\\robfa\\Desktop\\" + row[0] + ".csv"
@@ -48,11 +49,10 @@ for index, row in keywords.iterrows():
     Latest_df.reset_index(inplace=True)
     interest_over_time_df.reset_index(inplace=True)
     Latest_df = Latest_df.copy()
-    print(Latest_df)
     Latest_df['date'] = Latest_df['date'].astype('datetime64[ns]')
     s1 = pd.merge(interest_over_time_df, Latest_df, how='inner', on=['date'])
     execution = 's1 = s1.assign(Ratio = (s1.' + row[0] + '_x) / (s1.' + row[0] + '_y))'
-    exec(execution)
+    exec(execution) #This is definitely not ideal! Come back to this to find a better way
     s1 = s1.head(-12)                                                                                                   #Most recent data is not fully trustworthy - last 12 minutes seem to vary
     Average_Ratio = s1["Ratio"].mean()
     print("Average Ratio:", Average_Ratio)
