@@ -2,7 +2,7 @@
 # Requires the pytrends library. To install, run "pip install pytrends".
 from pytrends.request import TrendReq
 import time
-import os
+import numpy
 from random import randint
 import pandas as pd
 
@@ -29,67 +29,37 @@ for index, row in keywords.iterrows():
     print("")
     print("====" + row[0] + "====")
     print("")
-    FullData_DF = pd.read_csv(path,names=['Date', 'Interest', 'Run'],index_col='Date')
-    #print(FullData_DF)
+    FullData_DF = pd.read_csv(path,
+                              names=['index', 'date', row[0], 'Run', 'Average Ratio', 'AbsoluteValue'],
+                              index_col='date')
     MaximumRun = FullData_DF['Run'].max(axis=0)
-    print("Previous Maximum Run:", MaximumRun) #This holds the previous maximum run
+    if numpy.isnan(MaximumRun):
+        MaximumRun = 0
+    print("Previous Maximum Run:", MaximumRun)                                                                          #This holds the previous maximum run
     CurrentRun = MaximumRun + 1
-    print("Now Running:", CurrentRun) #This holds the run currently being generated
-    #print(FullData_DF['Run'].dtype)
-    Latest_df = FullData_DF[FullData_DF['Run'] == (MaximumRun)] #This dataframe is to be compared to the generated payload
+    print("Now Running:", CurrentRun)                                                                                   #This holds the run currently being generated
+    Latest_df = FullData_DF[FullData_DF['Run'] == (MaximumRun)]                                                         #This dataframe is to be compared to the generated payload
     print ("Building Payload")
-    connector.build_payload(kw_list=[row[0]], timeframe='now 1-H')
-    print ("Payload Built")
+    connector.build_payload(kw_list = [row[0]], timeframe = 'now 1-H')
     time.sleep(randint(2, 5))
-    print ("Creating Dataframe")
+    print("Creating Dataframe")
     interest_over_time_df = connector.interest_over_time()
-    print ("Dataframe Created")
-    print ("Printing Dataframe")
-    
+    interest_over_time_df = interest_over_time_df.assign(Run=CurrentRun)
+    Latest_df.reset_index(inplace=True)
+    interest_over_time_df.reset_index(inplace=True)
+    Latest_df = Latest_df.copy()
     print(Latest_df)
-    print(interest_over_time_df)
-   
-    print(Latest_df.iloc[:, 0].dtype)
-    print(Latest_df.iloc[:,0:].values)
-    #== interest_over_time_df['date']
-    #print{"twat"}
-    #else print("knob")
-    
-    
-    
-    
-     #for index, row in Latest_df['Date']
+    Latest_df['date'] = Latest_df['date'].astype('datetime64[ns]')
+    s1 = pd.merge(interest_over_time_df, Latest_df, how='inner', on=['date'])
+    execution = 's1 = s1.assign(Ratio = (s1.' + row[0] + '_x) / (s1.' + row[0] + '_y))'
+    exec(execution)
+    s1 = s1.head(-12)                                                                                                   #Most recent data is not fully trustworthy - last 12 minutes seem to vary
+    Average_Ratio = s1["Ratio"].mean()
+    print("Average Ratio:", Average_Ratio)
+    interest_over_time_df = interest_over_time_df.assign(Average_Ratio=Average_Ratio)
+    interest_over_time_df = interest_over_time_df.assign(Absolute_Value=interest_over_time_df[row[0]] * Average_Ratio)
     with open(path, 'a') as f:
-        interest_over_time_df = interest_over_time_df.assign(Run=CurrentRun)
         interest_over_time_df.to_csv(f, header=False)
-    #interest_over_time_df.to_csv(path)
-    #connector.save_csv(path, str(index))
-    #with open(str(index) + '.csv', 'xt') as f:
-        #f.close()
-    #print ("created file")
-    #c#svname = str(index)+".csv"
-    #trenddata = pd.read_csv(csvname, skiprows=0, names=['date', 'values'])
-    #keyword = trenddata['values'].loc[[0]][0]
-    #trenddata = trenddata.ix[1:]
-    #trenddata['keyword'] = keyword
-    #trenddata.rename(columns={'values': 'trends'}, inplace=True)
-    #trenddata['trends'] = pd.to_numeric(trenddata['trends'], errors='coerce')
-    #trenddata['date'] = trenddata['date'].str.extract('(^[0-9]{4}\-[0-9]{2}\-[0-9]{2}) \-.*')
-    #trenddata = trenddata.dropna()
-    #trenddata['date'] = pd.to_datetime(trenddata['date'])
-    #trenddata['year'] = pd.DatetimeIndex(trenddata['date']).year
-    #trenddata['month'] = pd.DatetimeIndex(trenddata['date']).month
-    #trenddata['day'] = pd.DatetimeIndex(trenddata['date']).day
-    #maxyear = trenddata['year'].max()
-    #grouped = trenddata.groupby(['year']).mean()
-    #def slope_formula(xone, yone, xtwo, ytwo):
-    #    return (ytwo-yone)/(xtwo-xone)
-    #maxyear = trenddata['year'].max()
-    #grouped = trenddata.groupby(['year']).mean()
-    #slope = slope_formula(1,float(grouped.loc[grouped.index==maxyear-2]['trends']),
-    #                      2,float(grouped.loc[grouped.index==maxyear-1]['trends']))
-    #keywordlist = keywordlist.append({'keyword':keyword,'slope':slope}, ignore_index=True)
-    #os.remove(csvname)
 
 # Specify a csv filename to output the slope values.
 #keywordlist.to_csv("trends_slope.csv", sep=",", encoding="utf-8", index=False)
