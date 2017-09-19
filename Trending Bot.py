@@ -11,7 +11,7 @@ print ("Imports complete")
 # Add your Gmail username to the google_username variable and your Gmail password to the google_password variable.
 # Be sure to amend the tz variable for your timezone.
 # https://github.com/GeneralMills/pytrends
-g6yoogle_username = ""
+google_username = ""
 google_password = ""
 connector = TrendReq(google_username, google_password, tz='-360')
 
