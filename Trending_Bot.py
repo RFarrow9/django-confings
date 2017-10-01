@@ -5,7 +5,7 @@ import time
 import numpy
 from random import randint
 import pandas as pd
-import nma
+import pynma
 
 print ("Imports complete")
 
@@ -15,9 +15,10 @@ print ("Imports complete")
 google_username = ""
 google_password = ""
 connector = TrendReq(google_username, google_password, tz='-360')
+p = pynma.PyNMA("92a9e6e94e236a22d036f343d5aefa8578fff2f7d23d37e7")
 
 # This script downloads a series of CSV files. Please specify your working directory.
-path = "C:\\Users\\robfa\\Desktop\\0.csv"
+path = "C:\\Users\\robfa\\Documents\\Python\\0.csv"
 
 # Specify the filename of a CSV with a list of keywords in the variable, keywordcsv. The CSV should be one column, with header equal to Keywords (case sensitive).
 keywordcsv = "keywords.csv"
@@ -26,7 +27,7 @@ keywords = pd.read_csv(keywordcsv)
 # Downloads the new data, and compares this to the previous.
 keywordlist = pd.DataFrame(columns=["keyword","slope","test"])
 for index, row in keywords.iterrows():
-    path = "C:\\Users\\robfa\\Desktop\\" + row[0] + ".csv"
+    path = "C:\\Users\\robfa\\Documents\\Python\\" + row[0] + ".csv"
     print("Downloading Keyword #" + str(index))
     print("")
     print("====" + row[0] + "====")
@@ -67,22 +68,19 @@ for index, row in keywords.iterrows():
             for i, l in enumerate(f):
                 pass
         return i + 1
-    #print(file_len(path))
     Peak_detect_short_DF = pd.read_csv(path,
                               names=['index', 'date', row[0], 'Run', 'Average Ratio', 'AbsoluteValue'],
-                              index_col='date', skiprows=file_len(path) - 59 * 4)
-    #print(Peak_detect_short_DF) #Looks over the last 2 hours or so
-    #pd.rolling_std(Peak_detect_short_DF[['AbsoluteValue']], 5)
-    print(Peak_detect_short_DF[['AbsoluteValue']].rolling(window=5, center=False).std())
-    #print(Peak_detect_short_DF[['AbsoluteValue']])
-print("Slope calculation and CSV export complete.")
+                              index_col='date', skiprows=file_len(path) - 59)
+    StandardDevDF = Peak_detect_short_DF[['AbsoluteValue']].rolling(window=5, center=False).std()
+    s = StandardDevDF.ix[:,0].tolist()
+    MaxSD = numpy.nanmax(s)
+    print(MaxSD)
+    if MaxSD >= 30:
+        p.push("Django", "High Activity Ping", "Something might be happening with " + row[0])
+    elif  MaxSD >= 40:
+        p.push("Django", "High Activity Ping", "Seriously something is happening with " + row[0])
 
-#USE NOTIFYMYANDROID
-#Take the last 4 or so (as an arbitrary starting point) runs data and calculate a rolling standard distribution.
-#Do twice - one for long long range, one for very short peaks - perhaps this one could use a larger window? 10 runs?
-#Once this value exceeds a certain value - set threshold then you have either a peak or a trough
-#Then the notification method?
-
+#print("Slope calculation and CSV export complete.")
 
 
 
